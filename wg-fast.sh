@@ -66,6 +66,7 @@ addPeer() {
 
 	cat >> /etc/wireguard/wg0.conf <<-EOL
 
+	# $1
 	[Peer]
 	PublicKey = $(cat /etc/wireguard/${1}_publickey)
 	AllowedIPs = 10.0.0.$curnt_ips/32
@@ -152,6 +153,7 @@ if [ $? -eq 1 ]; then
 
 		cat >> /etc/wireguard/wg0.conf <<-EOL
 
+		# $2
 		[Peer]
 		PublicKey = $(cat /etc/wireguard/${2}_publickey)
 		AllowedIPs = 10.0.0.2/32
