@@ -58,6 +58,8 @@ allowed_ips_amount() {
 	return $(echo "${allowed_ips[$lastString]}" | cut -d '.' -f 4 | cut -d '/' -f 1)
 }
 
+
+
 addPeer() {
 	allowed_ips_amount
 	curnt_ips=$(($? + 1))
@@ -68,6 +70,11 @@ addPeer() {
 	PublicKey = $(cat /etc/wireguard/${1}_publickey)
 	AllowedIPs = 10.0.0.$curnt_ips/32
 	EOL
+}
+
+wgRestart() {
+	systemctl restart wg-quick@wg0.service
+	systemctl status wg-quick@wg0.service
 }
 
 
@@ -139,8 +146,8 @@ if [ $? -eq 1 ]; then
 		PrivateKey = $(cat /etc/wireguard/privatekey)
 		Address = 10.0.0.1/24
 		ListenPort = 51830
-		PostUp = iptables -A FORWARD -i %i -j ACCEPT; iptables -t nat -A POSTROUTING -o eth0 -j MASQUERADE
-		PostDown = iptables -D FORWARD -i %i -j ACCEPT; iptables -t nat -D POSTROUTING -o eth0 -j MASQUERADE 
+		PostUp = iptables -A FORWARD -i %i -j ACCEPT; iptables -t nat -A POSTROUTING -o $netInterface -j MASQUERADE
+		PostDown = iptables -D FORWARD -i %i -j ACCEPT; iptables -t nat -D POSTROUTING -o $netInterface -j MASQUERADE 
 		EOL
 
 		cat >> /etc/wireguard/wg0.conf <<-EOL
@@ -164,6 +171,15 @@ if [ $? -eq 1 ]; then
 			PersistentKeepalive = 20
 
 		EOL
+
+		# Включаем ip ip forwarding
+		echo "net.ipv4.ip_forward=1" >> /etc/sysctl.conf
+		sysctl -p
+
+		# Включаем ситему
+		systemctl enable wg-quick@wg0.service
+		systemctl start wg-quick@wg0.service
+		systemctl status wg-quick@wg0.service
 fi
 
 isAdd $1
@@ -185,6 +201,8 @@ if [ $? -eq 1 ]; then
 			PersistentKeepalive = 20
 
 		EOL
+
+		wgRestart
 fi
 
 
